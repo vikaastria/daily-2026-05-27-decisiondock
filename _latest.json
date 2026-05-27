@@ -1,0 +1,16 @@
+{
+  "date": "2026-05-27",
+  "title": "Decision Dock",
+  "slug": "decisiondock",
+  "problem": "Small product and ops decisions often get stuck in vague discussion, with no quick way to compare impact, effort, and risk.",
+  "idea": "A tiny decision matrix that ranks options, surfaces the best quick win, and explains the recommended pick.",
+  "summary": "Brutalist-light MVP that turns a short list of options into a ranked shortlist and a recommended choice.",
+  "theme": "brutalist-light / decision matrix",
+  "local_path": "/home/veri/daily-projects/2026-05-27-decisiondock",
+  "repo_url": "",
+  "deployed_url": "https://daily.verivibe.dev",
+  "admin_url": "https://admin-daily.verivibe.dev",
+  "rating": "2",
+  "notes": "Static vanilla HTML/CSS/JS app with sample decision data and a bold split-screen layout.",
+  "repo_mode": "new-repo"
+}

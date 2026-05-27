@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decision Dock — rank options, pick one, move faster</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #fffdf8;
+      --ink: #151515;
+      --muted: #565656;
+      --line: #181818;
+      --accent: #ff4d4d;
+      --accent-2: #0f62fe;
+      --good: #167c3b;
+      --warn: #8a5a00;
+      --shadow: 8px 8px 0 rgba(0, 0, 0, 0.14);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(15, 98, 254, 0.05), transparent 40%),
+        linear-gradient(315deg, rgba(255, 77, 77, 0.08), transparent 30%),
+        var(--bg);
+      padding: 24px;
+    }
+
+    a { color: inherit; }
+
+    .page {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1.18fr .82fr;
+    }
+
+    .frame,
+    .panel,
+    .card,
+    .sticker {
+      border: 3px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .frame {
+      padding: 28px;
+      display: grid;
+      gap: 18px;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      align-items: start;
+    }
+
+    .badge {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      font-size: .8rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    h1 {
+      margin: 14px 0 12px;
+      font-size: clamp(2.6rem, 5vw, 5.3rem);
+      line-height: .92;
+      letter-spacing: -0.08em;
+      max-width: 10ch;
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 62ch;
+      font-size: 1.03rem;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 2px solid var(--line);
+      background: #fff;
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .chip.red { background: #fff0f0; }
+    .chip.blue { background: #eef4ff; }
+    .chip.green { background: #effaf2; }
+    .chip.yellow { background: #fff8e6; }
+
+    .editor {
+      margin-top: 22px;
+      display: grid;
+      gap: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      resize: vertical;
+      padding: 18px;
+      border: 3px solid var(--line);
+      border-radius: 20px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      line-height: 1.6;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+    }
+
+    textarea::placeholder { color: #7e7e7e; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 3px solid var(--line);
+      border-radius: 999px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      background: #fff;
+      color: var(--ink);
+      transition: transform .15s ease, box-shadow .15s ease;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    button:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.12); }
+    button.primary { background: linear-gradient(135deg, #0f62fe, #2dd4bf); color: #fff; }
+    button.alt { background: #fff6d8; }
+    button.ghost { background: #fff; }
+
+    .detail {
+      display: grid;
+      gap: 14px;
+      position: sticky;
+      top: 16px;
+    }
+
+    .sticker {
+      padding: 16px;
+      background: linear-gradient(180deg, #fff, #fffdf6);
+    }
+
+    .sticker h3,
+    .panel h2,
+    .card h4 {
+      margin: 0 0 10px;
+      letter-spacing: -0.04em;
+    }
+
+    .stat-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stat {
+      padding: 14px;
+      border: 2px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .stat .label { font-size: .76rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .stat .value { margin-top: 8px; font-size: 1.15rem; font-weight: 950; letter-spacing: -0.03em; }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .matrix {
+      display: grid;
+      gap: 12px;
+    }
+
+    .row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1.1fr repeat(4, .6fr) 1fr;
+      align-items: center;
+      padding: 14px;
+      border: 2px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .row.head {
+      background: #151515;
+      color: #fff;
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      font-weight: 900;
+    }
+
+    .row .option {
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .score {
+      justify-self: start;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 2px solid var(--line);
+      font-weight: 900;
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    .score.high { background: #effaf2; }
+    .score.med { background: #fff8e6; }
+    .score.low { background: #fff0f0; }
+
+    .two-col {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1.05fr .95fr;
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .bullet-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .bullet-list li + li { margin-top: 8px; }
+
+    .foot {
+      font-size: .86rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .copybox {
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .87rem;
+      line-height: 1.55;
+      padding: 14px;
+      border: 2px dashed rgba(0, 0, 0, 0.32);
+      border-radius: 16px;
+      background: #fcfcfc;
+      min-height: 120px;
+    }
+
+    .reco {
+      padding: 16px;
+      border: 3px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(135deg, #0f62fe, #ff4d4d);
+      color: #fff;
+    }
+
+    .reco .kicker {
+      display: inline-flex;
+      padding: 6px 10px;
+      border: 2px solid rgba(255,255,255,.9);
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      background: rgba(255,255,255,.12);
+    }
+
+    .reco h3 {
+      margin: 12px 0 8px;
+      font-size: 1.45rem;
+      letter-spacing: -0.04em;
+    }
+
+    .reco p { margin: 0; line-height: 1.6; opacity: .95; }
+
+    @media (max-width: 1060px) {
+      .page { grid-template-columns: 1fr; }
+      .frame { grid-template-columns: 1fr; }
+      .detail { position: static; }
+      .row { grid-template-columns: 1fr 1fr; }
+      .row.head { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      body { padding: 14px; }
+      .frame { padding: 18px; }
+      .two-col, .stat-grid { grid-template-columns: 1fr; }
+      h1 { max-width: none; }
+      button { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="frame">
+      <div>
+        <div class="badge">Decision Dock · brutalist-light matrix</div>
+        <h1>Pick the next thing without the boardroom drift.</h1>
+        <p class="lede">
+          Paste a few options, compare impact versus effort, and let Decision Dock surface the cleanest move.
+          It ships with sample data so you can test the workflow instantly.
+        </p>
+
+        <div class="chip-row" aria-label="Highlights">
+          <div class="chip red">Ranked shortlist</div>
+          <div class="chip blue">Impact / effort / risk</div>
+          <div class="chip green">Quick-win finder</div>
+          <div class="chip yellow">No build step</div>
+        </div>
+
+        <div class="editor">
+          <textarea id="input" placeholder="One option per line:\nFeature name | impact | effort | risk | notes\n\nExample:\nCSV export | high | medium | low | requested by ops"></textarea>
+          <div class="actions">
+            <button id="analyze" class="primary">Analyze options</button>
+            <button id="sample" class="alt">Load sample set</button>
+            <button id="copy" class="ghost">Copy summary</button>
+          </div>
+        </div>
+
+        <div class="two-col" style="margin-top:18px;">
+          <div class="card">
+            <h4>Why it matters</h4>
+            <ul class="bullet-list">
+              <li>Turns vague choices into a ranked decision board.</li>
+              <li>Highlights the best low-effort, high-impact move.</li>
+              <li>Shows a quick reason so the team can align fast.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4>Try this today</h4>
+            <div class="foot">
+              Replace the sample lines with product ideas, release tasks, or proposals.
+              The output updates in one click and the recommendation is ready to paste into chat.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="detail">
+        <div class="sticker">
+          <h3>Live snapshot</h3>
+          <div class="stat-grid">
+            <div class="stat"><div class="label">Top pick</div><div class="value" id="topPick">—</div></div>
+            <div class="stat"><div class="label">Quick win</div><div class="value" id="quickWin">—</div></div>
+            <div class="stat"><div class="label">Lowest risk</div><div class="value" id="lowestRisk">—</div></div>
+            <div class="stat"><div class="label">Options</div><div class="value" id="count">0</div></div>
+          </div>
+        </div>
+
+        <div class="reco" id="reco">
+          <div class="kicker">Recommendation</div>
+          <h3 id="recoTitle">Load a sample set to see the pick.</h3>
+          <p id="recoBody">Decision Dock scores your options and explains why the chosen item wins.</p>
+        </div>
+
+        <div class="sticker">
+          <h3>Summary copy</h3>
+          <div class="copybox" id="summary">Waiting for analysis…</div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel">
+      <h2>Decision matrix</h2>
+      <div class="matrix" id="matrix"></div>
+    </section>
+  </main>
+
+  <script>
+    const sample = `CSV export | high | low | low | power users keep asking for it
+Mobile checkout fix | high | medium | medium | reduces abandoned carts on small screens
+Search filter polish | medium | low | low | makes browsing less frustrating
+Analytics dashboard | medium | high | medium | useful, but needs more design time
+Dark mode refresh | low | low | low | nice-to-have visual polish`;
+
+    const el = (id) => document.getElementById(id);
+    const input = el('input');
+    const matrix = el('matrix');
+    const summary = el('summary');
+    const recoTitle = el('recoTitle');
+    const recoBody = el('recoBody');
+
+    const weight = { high: 3, medium: 2, low: 1 };
+
+    function parseLine(line) {
+      const parts = line.split('|').map((part) => part.trim()).filter(Boolean);
+      const title = parts[0] || 'Untitled';
+      const impactRaw = (parts[1] || '').toLowerCase();
+      const effortRaw = (parts[2] || '').toLowerCase();
+      const riskRaw = (parts[3] || '').toLowerCase();
+      const notes = parts.slice(4).join(' | ') || parts[4] || '';
+      const impact = weight[impactRaw] ? impactRaw : guessImpact(title + ' ' + notes);
+      const effort = weight[effortRaw] ? effortRaw : guessEffort(title + ' ' + notes);
+      const risk = weight[riskRaw] ? riskRaw : guessRisk(title + ' ' + notes);
+      const score = weight[impact] * 3 - weight[effort] - weight[risk];
+      return { title, impact, effort, risk, notes, score };
+    }
+
+    function has(words, text) {
+      return words.some((word) => text.includes(word));
+    }
+
+    function guessImpact(text) {
+      const t = text.toLowerCase();
+      if (has(['checkout', 'payment', 'error', 'invoice', 'export', 'search', 'crash', 'signup'], t)) return 'high';
+      if (has(['dashboard', 'report', 'sync', 'automation', 'filters', 'analytics'], t)) return 'medium';
+      return 'low';
+    }
+
+    function guessEffort(text) {
+      const t = text.toLowerCase();
+      if (has(['polish', 'copy', 'label', 'color', 'text', 'minor'], t)) return 'low';
+      if (has(['dashboard', 'analytics', 'integration', 'workflow'], t)) return 'high';
+      return 'medium';
+    }
+
+    function guessRisk(text) {
+      const t = text.toLowerCase();
+      if (has(['fix', 'copy', 'polish', 'label'], t)) return 'low';
+      if (has(['payment', 'migration', 'integration', 'checkout'], t)) return 'medium';
+      return 'low';
+    }
+
+    function scoreClass(score) {
+      if (score >= 7) return 'high';
+      if (score >= 5) return 'med';
+      return 'low';
+    }
+
+    function render(data) {
+      if (!data.length) {
+        matrix.innerHTML = '<div class="row"><div class="option">No options yet</div><div>—</div><div>—</div><div>—</div><div>—</div><div class="score low">waiting</div></div>';
+        return;
+      }
+
+      matrix.innerHTML = [
+        '<div class="row head"><div>Option</div><div>Impact</div><div>Effort</div><div>Risk</div><div>Notes</div><div>Score</div></div>',
+        ...data.map((item) => `
+          <div class="row">
+            <div class="option">${escapeHtml(item.title)}</div>
+            <div>${item.impact}</div>
+            <div>${item.effort}</div>
+            <div>${item.risk}</div>
+            <div>${escapeHtml(item.notes || '—')}</div>
+            <div class="score ${scoreClass(item.score)}">${item.score}</div>
+          </div>
+        `),
+      ].join('');
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function analyze() {
+      const lines = input.value.split('\n').map((line) => line.trim()).filter(Boolean);
+      const items = lines.map(parseLine).sort((a, b) => b.score - a.score);
+      render(items);
+
+      el('count').textContent = String(items.length);
+      const top = items[0];
+      const quick = [...items].sort((a, b) => (a.effort === 'low') - (b.effort === 'low') || b.score - a.score)[0];
+      const safest = [...items].sort((a, b) => weight[a.risk] - weight[b.risk] || b.score - a.score)[0];
+      el('topPick').textContent = top ? top.title : '—';
+      el('quickWin').textContent = quick ? quick.title : '—';
+      el('lowestRisk').textContent = safest ? safest.title : '—';
+
+      if (!top) {
+        summary.textContent = 'Add lines in the format: title | impact | effort | risk | notes';
+        recoTitle.textContent = 'Load a sample set to see the pick.';
+        recoBody.textContent = 'Decision Dock scores your options and explains why the chosen item wins.';
+        return;
+      }
+
+      const rationale = top.score >= 7
+        ? 'It combines strong impact with manageable effort and low risk.'
+        : top.score >= 5
+          ? 'It is balanced enough to ship soon without dragging the team.'
+          : 'It still edges the list, but you may want to shrink scope before starting.';
+
+      recoTitle.textContent = top.title;
+      recoBody.textContent = `${rationale} Best score: ${top.score}.`;
+      summary.textContent = [
+        `Pick: ${top.title} (${top.score})`,
+        `Quick win: ${quick ? quick.title : '—'}`,
+        `Lowest risk: ${safest ? safest.title : '—'}`,
+        '',
+        `Why: ${top.impact} impact, ${top.effort} effort, ${top.risk} risk.`,
+        `Notes: ${top.notes || '—'}`,
+      ].join('\n');
+    }
+
+    el('sample').addEventListener('click', () => {
+      input.value = sample;
+      analyze();
+    });
+
+    el('analyze').addEventListener('click', analyze);
+
+    el('copy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(summary.textContent || '');
+        el('copy').textContent = 'Copied!';
+        setTimeout(() => { el('copy').textContent = 'Copy summary'; }, 1200);
+      } catch {
+        el('copy').textContent = 'Copy blocked';
+        setTimeout(() => { el('copy').textContent = 'Copy summary'; }, 1200);
+      }
+    });
+
+    input.value = sample;
+    analyze();
+  </script>
+</body>
+</html>
